@@ -1,0 +1,379 @@
+/**
+ * Dooray Projects API
+ * Handles project and task management operations
+ */
+
+import { getClient } from './client.js';
+import {
+  Project,
+  ProjectListParams,
+  Task,
+  TaskListParams,
+  CreateTaskParams,
+  UpdateTaskParams,
+  CreateTaskCommentParams,
+  CreateTaskCommentResponse,
+  UpdateTaskCommentParams,
+  TaskCommentListParams,
+  TaskComment,
+  Milestone,
+  MilestoneListParams,
+  Tag,
+  TagListParams,
+  Workflow,
+  WorkflowListParams,
+  ProjectTemplate,
+  GetProjectTemplateListParams,
+  GetProjectTemplateParams,
+  ProjectMember,
+  GetProjectMemberListParams,
+  ProjectMemberGroup,
+  GetProjectMemberGroupListParams,
+  FileUploadResult,
+  PaginatedResponse,
+} from '../types/dooray-api.js';
+
+const PROJECTS_BASE = '/project/v1';
+
+/**
+ * Get list of projects accessible by the user
+ */
+export async function getProjects(params?: ProjectListParams): Promise<PaginatedResponse<Project>> {
+  const client = getClient();
+  return client.getPaginated<Project>(`${PROJECTS_BASE}/projects`, {
+    member: 'me',
+    state: 'active',
+    page: params?.page || 0,
+    size: params?.size || 20,
+  });
+}
+
+/**
+ * Get details of a specific project
+ */
+export async function getProjectDetails(projectId: string): Promise<Project> {
+  const client = getClient();
+  return client.get(`${PROJECTS_BASE}/projects/${projectId}`);
+}
+
+/**
+ * Get list of tasks based on filters
+ */
+export async function getTasks(params: TaskListParams): Promise<PaginatedResponse<Task>> {
+  const client = getClient();
+
+  const queryParams: Record<string, unknown> = {
+    page: params.page || 0,
+    size: params.size || 20,
+  };
+
+  // Add optional filters
+  if (params.fromEmailAddress) queryParams.fromEmailAddress = params.fromEmailAddress;
+  if (params.fromMemberIds) queryParams.fromMemberIds = params.fromMemberIds.join(',');
+  if (params.toMemberIds) queryParams.toMemberIds = params.toMemberIds.join(',');
+  if (params.ccMemberIds) queryParams.ccMemberIds = params.ccMemberIds.join(',');
+  if (params.tagIds) queryParams.tagIds = params.tagIds.join(',');
+  if (params.parentPostId) queryParams.parentPostId = params.parentPostId;
+  if (params.postNumber !== undefined) queryParams.postNumber = params.postNumber;
+  if (params.postWorkflowClasses) queryParams.postWorkflowClasses = params.postWorkflowClasses.join(',');
+  if (params.postWorkflowIds) queryParams.postWorkflowIds = params.postWorkflowIds.join(',');
+  if (params.milestoneIds) queryParams.milestoneIds = params.milestoneIds.join(',');
+  if (params.subjects) queryParams.subjects = params.subjects;
+  if (params.createdAt) queryParams.createdAt = params.createdAt;
+  if (params.updatedAt) queryParams.updatedAt = params.updatedAt;
+  if (params.dueAt) queryParams.dueAt = params.dueAt;
+  if (params.order) queryParams.order = params.order;
+
+  return client.getPaginated<Task>(`${PROJECTS_BASE}/projects/${params.projectId}/posts`, queryParams);
+}
+
+/**
+ * Get details of a specific task
+ * Can be called with or without projectId
+ */
+export async function getTaskDetails(taskId: string, projectId?: string): Promise<Task> {
+  const client = getClient();
+
+  // If projectId is provided, use the project-scoped endpoint
+  // Otherwise, use the global endpoint that works with just taskId
+  if (projectId) {
+    return client.get(`${PROJECTS_BASE}/projects/${projectId}/posts/${taskId}`);
+  } else {
+    return client.get(`${PROJECTS_BASE}/posts/${taskId}`);
+  }
+}
+
+/**
+ * Create a new task
+ */
+export async function createTask(params: CreateTaskParams): Promise<Task> {
+  const client = getClient();
+
+  const requestBody: Record<string, unknown> = {
+    subject: params.subject,
+  };
+
+  if (params.parentPostId) requestBody.parentPostId = params.parentPostId;
+  if (params.body) requestBody.body = params.body;
+  if (params.users) requestBody.users = params.users;
+  if (params.dueDate) {
+    requestBody.dueDate = params.dueDate;
+    // Set dueDateFlag to true when dueDate is provided (API recommendation)
+    requestBody.dueDateFlag = params.dueDateFlag !== undefined ? params.dueDateFlag : true;
+  }
+  if (params.milestoneId) requestBody.milestoneId = params.milestoneId;
+  if (params.tagIds) requestBody.tagIds = params.tagIds;
+  if (params.priority) requestBody.priority = params.priority;
+
+  return client.post(`${PROJECTS_BASE}/projects/${params.projectId}/posts`, requestBody);
+}
+
+/**
+ * Update an existing task
+ */
+export async function updateTask(
+  projectId: string,
+  taskNumber: number,
+  params: UpdateTaskParams
+): Promise<Task> {
+  const client = getClient();
+
+  const requestBody: Record<string, unknown> = {};
+
+  if (params.subject !== undefined) requestBody.subject = params.subject;
+  if (params.body !== undefined) requestBody.body = params.body;
+  if (params.users !== undefined) requestBody.users = params.users;
+  if (params.dueDate !== undefined) requestBody.dueDate = params.dueDate;
+  if (params.dueDateFlag !== undefined) requestBody.dueDateFlag = params.dueDateFlag;
+  if (params.milestoneId !== undefined) requestBody.milestoneId = params.milestoneId;
+  if (params.tagIds !== undefined) requestBody.tagIds = params.tagIds;
+  if (params.priority !== undefined) requestBody.priority = params.priority;
+  if (params.workflowId !== undefined) requestBody.workflowId = params.workflowId;
+
+  return client.put(`${PROJECTS_BASE}/projects/${projectId}/posts/${taskNumber}`, requestBody);
+}
+
+/**
+ * Create a comment on a task (댓글 생성)
+ */
+export async function createTaskComment(
+  params: CreateTaskCommentParams
+): Promise<CreateTaskCommentResponse> {
+  const client = getClient();
+
+  const requestBody: Record<string, unknown> = {
+    body: {
+      content: params.body.content,
+      mimeType: params.body.mimeType,
+    },
+  };
+
+  if (params.attachFileIds && params.attachFileIds.length > 0) {
+    requestBody.attachFileIds = params.attachFileIds;
+  }
+
+  return client.post<CreateTaskCommentResponse>(
+    `${PROJECTS_BASE}/projects/${params.projectId}/posts/${params.taskId}/logs`,
+    requestBody
+  );
+}
+
+/**
+ * Get list of comments on a task (댓글 목록 조회)
+ */
+export async function getTaskComments(
+  params: TaskCommentListParams
+): Promise<PaginatedResponse<TaskComment>> {
+  const client = getClient();
+
+  const queryParams: Record<string, unknown> = {
+    page: params.page || 0,
+    size: params.size || 20,
+  };
+
+  if (params.order) {
+    queryParams.order = params.order;
+  }
+
+  return client.getPaginated(
+    `${PROJECTS_BASE}/projects/${params.projectId}/posts/${params.taskId}/logs`,
+    queryParams
+  );
+}
+
+/**
+ * Update a comment on a task (댓글 수정)
+ */
+export async function updateTaskComment(
+  params: UpdateTaskCommentParams
+): Promise<void> {
+  const client = getClient();
+
+  const requestBody: Record<string, unknown> = {};
+
+  if (params.body) {
+    requestBody.body = {
+      content: params.body.content,
+      mimeType: params.body.mimeType,
+    };
+  }
+
+  if (params.attachFileIds && params.attachFileIds.length > 0) {
+    requestBody.attachFileIds = params.attachFileIds;
+  }
+
+  await client.put(
+    `${PROJECTS_BASE}/projects/${params.projectId}/posts/${params.taskId}/logs/${params.commentId}`,
+    requestBody
+  );
+}
+
+/**
+ * Get milestones for a project
+ */
+export async function getMilestones(params: MilestoneListParams): Promise<Milestone[]> {
+  const client = getClient();
+
+  const queryParams: Record<string, unknown> = {};
+  if (params.status) queryParams.status = params.status;
+
+  return client.get(`${PROJECTS_BASE}/projects/${params.projectId}/milestones`, queryParams);
+}
+
+/**
+ * Get tags for a project
+ */
+export async function getTags(params: TagListParams): Promise<PaginatedResponse<Tag>> {
+  const client = getClient();
+  
+  const queryParams: Record<string, unknown> = {
+    page: params.page || 0,
+    size: params.size || 100, // Default to max size to get all tags
+  };
+  
+  return client.getPaginated<Tag>(`${PROJECTS_BASE}/projects/${params.projectId}/tags`, queryParams);
+}
+
+/**
+ * Get details of a specific tag
+ */
+export async function getTagDetails(projectId: string, tagId: string): Promise<Tag> {
+  const client = getClient();
+  return client.get(`${PROJECTS_BASE}/projects/${projectId}/tags/${tagId}`);
+}
+
+/**
+ * Get workflows (업무 상태) for a project
+ */
+export async function getProjectWorkflows(
+  params: WorkflowListParams
+): Promise<Workflow[]> {
+  const client = getClient();
+
+  return client.get<Workflow[]>(
+    `${PROJECTS_BASE}/projects/${params.projectId}/workflows`
+  );
+}
+
+/**
+ * Get project templates
+ */
+export async function getProjectTemplates(
+  params: GetProjectTemplateListParams
+): Promise<PaginatedResponse<ProjectTemplate>> {
+  const client = getClient();
+  const queryParams: Record<string, unknown> = {
+    page: params.page ?? 0,
+    size: params.size ?? 20,
+  };
+
+  return client.getPaginated<ProjectTemplate>(
+    `${PROJECTS_BASE}/projects/${params.projectId}/templates`,
+    queryParams
+  );
+}
+
+/**
+ * Get details of a specific project template
+ */
+export async function getProjectTemplate(
+  params: GetProjectTemplateParams
+): Promise<ProjectTemplate> {
+  const client = getClient();
+
+  // No query params needed - interpolation defaults to false
+  return client.get(
+    `${PROJECTS_BASE}/projects/${params.projectId}/templates/${params.templateId}`
+  );
+}
+
+/**
+ * Get project members
+ */
+export async function getProjectMembers(
+  params: GetProjectMemberListParams
+): Promise<PaginatedResponse<ProjectMember>> {
+  const client = getClient();
+  const queryParams: Record<string, unknown> = {
+    page: params.page ?? 0,
+    size: params.size ?? 20,
+  };
+
+  if (params.roles && params.roles.length > 0) {
+    queryParams.roles = params.roles.join(',');
+  }
+
+  return client.getPaginated<ProjectMember>(
+    `${PROJECTS_BASE}/projects/${params.projectId}/members`,
+    queryParams
+  );
+}
+
+/**
+ * Get project member groups
+ */
+export async function getProjectMemberGroups(
+  params: GetProjectMemberGroupListParams
+): Promise<PaginatedResponse<ProjectMemberGroup>> {
+  const client = getClient();
+  const queryParams: Record<string, unknown> = {
+    page: params.page ?? 0,
+    size: params.size ?? 20,
+  };
+
+  const result = await client.getPaginated<ProjectMemberGroup>(
+    `${PROJECTS_BASE}/projects/${params.projectId}/member-groups`,
+    queryParams
+  );
+
+  // API returns double-nested array: result.data[0] contains the actual array
+  // Flatten it to get the correct structure
+  if (Array.isArray(result.data) && result.data.length > 0 && Array.isArray(result.data[0])) {
+    result.data = result.data[0] as ProjectMemberGroup[];
+  }
+
+  return result;
+}
+
+/**
+ * Upload a file to a task
+ */
+export async function uploadFileToTask(
+  projectId: string,
+  taskNumber: number,
+  file: { name: string; data: Buffer | Blob; mimeType?: string }
+): Promise<FileUploadResult> {
+  const client = getClient();
+
+  const formData = new FormData();
+  const blob = file.data instanceof Buffer
+    ? new Blob([file.data], { type: file.mimeType || 'application/octet-stream' })
+    : file.data;
+
+  formData.append('file', blob, file.name);
+
+  return client.uploadFile(
+    `${PROJECTS_BASE}/projects/${projectId}/posts/${taskNumber}/files`,
+    formData
+  );
+}

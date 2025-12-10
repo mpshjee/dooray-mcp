@@ -1,0 +1,218 @@
+#!/usr/bin/env node
+/**
+ * Dooray MCP Server
+ * Main entry point for the Model Context Protocol server
+ */
+
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+} from '@modelcontextprotocol/sdk/types.js';
+import * as dotenv from 'dotenv';
+import { initializeClient } from './api/client.js';
+import { logger } from './utils/logger.js';
+
+// Import all tools
+import { getMyMemberInfoTool, getMyMemberInfoHandler, getMyMemberInfoSchema } from './tools/common/get-my-member-info.js';
+
+import { getProjectListTool, getProjectListHandler, getProjectListSchema } from './tools/projects/get-project-list.js';
+import { getProjectTool, getProjectHandler, getProjectSchema } from './tools/projects/get-project.js';
+import { getTaskListTool, getTaskListHandler, getTaskListSchema } from './tools/projects/get-task-list.js';
+import { getTaskTool, getTaskHandler, getTaskSchema } from './tools/projects/get-task.js';
+import { createTaskTool, createTaskHandler, createTaskSchema } from './tools/projects/create-task.js';
+import { updateTaskTool, updateTaskHandler, updateTaskSchema } from './tools/projects/update-task.js';
+import { createTaskCommentTool, createTaskCommentHandler, createTaskCommentSchema } from './tools/projects/create-task-comment.js';
+import { getTaskCommentListTool, getTaskCommentListHandler, getTaskCommentListSchema } from './tools/projects/get-task-comment-list.js';
+import { updateTaskCommentTool, updateTaskCommentHandler, updateTaskCommentSchema } from './tools/projects/update-task-comment.js';
+import { getMilestoneListTool, getMilestoneListHandler, getMilestoneListSchema } from './tools/projects/get-milestone-list.js';
+import { getTagListTool, getTagListHandler, getTagListSchema } from './tools/projects/get-tag-list.js';
+import { getProjectTemplateListTool, getProjectTemplateListHandler, getProjectTemplateListSchema } from './tools/projects/get-project-template-list.js';
+import { getProjectTemplateTool, getProjectTemplateHandler, getProjectTemplateSchema } from './tools/projects/get-project-template.js';
+import { getProjectMemberListTool, getProjectMemberListHandler, getProjectMemberListSchema } from './tools/projects/get-project-member-list.js';
+import { getProjectMemberGroupListTool, getProjectMemberGroupListHandler, getProjectMemberGroupListSchema } from './tools/projects/get-project-member-group-list.js';
+import { getProjectWorkflowListTool, getProjectWorkflowListHandler, getProjectWorkflowListSchema } from './tools/projects/get-project-workflow-list.js';
+
+// Load environment variables
+dotenv.config();
+
+/**
+ * Tool registry mapping tool names to their handlers and schemas
+ */
+const toolRegistry = {
+  // Common tools
+  'get-my-member-info': { handler: getMyMemberInfoHandler, schema: getMyMemberInfoSchema },
+
+  // Projects tools
+  'get-project-list': { handler: getProjectListHandler, schema: getProjectListSchema },
+  'get-project': { handler: getProjectHandler, schema: getProjectSchema },
+  'get-task-list': { handler: getTaskListHandler, schema: getTaskListSchema },
+  'get-task': { handler: getTaskHandler, schema: getTaskSchema },
+  'create-task': { handler: createTaskHandler, schema: createTaskSchema },
+  'update-task': { handler: updateTaskHandler, schema: updateTaskSchema },
+  'create-task-comment': { handler: createTaskCommentHandler, schema: createTaskCommentSchema },
+  'get-task-comment-list': { handler: getTaskCommentListHandler, schema: getTaskCommentListSchema },
+  'update-task-comment': { handler: updateTaskCommentHandler, schema: updateTaskCommentSchema },
+  'get-milestone-list': { handler: getMilestoneListHandler, schema: getMilestoneListSchema },
+  'get-tag-list': { handler: getTagListHandler, schema: getTagListSchema },
+  'get-project-template-list': { handler: getProjectTemplateListHandler, schema: getProjectTemplateListSchema },
+  'get-project-template': { handler: getProjectTemplateHandler, schema: getProjectTemplateSchema },
+  'get-project-member-list': { handler: getProjectMemberListHandler, schema: getProjectMemberListSchema },
+  'get-project-member-group-list': { handler: getProjectMemberGroupListHandler, schema: getProjectMemberGroupListSchema },
+  'get-project-workflow-list': { handler: getProjectWorkflowListHandler, schema: getProjectWorkflowListSchema },
+};
+
+/**
+ * List of all available tools
+ */
+const tools = [
+  getMyMemberInfoTool,
+  getProjectListTool,
+  getProjectTool,
+  getTaskListTool,
+  getTaskTool,
+  createTaskTool,
+  updateTaskTool,
+  createTaskCommentTool,
+  getTaskCommentListTool,
+  updateTaskCommentTool,
+  getMilestoneListTool,
+  getTagListTool,
+  getProjectTemplateListTool,
+  getProjectTemplateTool,
+  getProjectMemberListTool,
+  getProjectMemberGroupListTool,
+  getProjectWorkflowListTool,
+];
+
+/**
+ * Main server initialization
+ */
+async function main() {
+  logger.info('Starting Dooray MCP Server...');
+
+  // Validate API token
+  const apiToken = process.env.DOORAY_API_TOKEN;
+  if (!apiToken) {
+    logger.error('DOORAY_API_TOKEN environment variable is required');
+    process.exit(1);
+  }
+
+  // Initialize Dooray API client
+  try {
+    initializeClient({
+      apiToken,
+      baseUrl: process.env.DOORAY_API_BASE_URL,
+    });
+    logger.info('Dooray API client initialized');
+  } catch (error) {
+    logger.error('Failed to initialize Dooray API client:', error);
+    process.exit(1);
+  }
+
+  // Create MCP server
+  const server = new Server(
+    {
+      name: 'dooray-mcp',
+      version: '0.1.0',
+    },
+    {
+      capabilities: {
+        tools: {},
+      },
+    }
+  );
+
+  // Handle list tools request
+  server.setRequestHandler(ListToolsRequestSchema, async () => {
+    logger.debug('Handling list_tools request');
+    return {
+      tools,
+    };
+  });
+
+  // Handle call tool request
+  server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    const { name, arguments: args } = request.params;
+    logger.info(`Tool called: ${name}`);
+    logger.debug(`Tool arguments:`, args);
+
+    const tool = toolRegistry[name as keyof typeof toolRegistry];
+    if (!tool) {
+      logger.error(`Unknown tool: ${name}`);
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Error: Unknown tool '${name}'`,
+          },
+        ],
+        isError: true,
+      };
+    }
+
+    try {
+      // Validate arguments with Zod schema
+      const validatedArgs = tool.schema.parse(args || {});
+
+      // Call the tool handler
+      const result = await (tool.handler as any)(validatedArgs);
+      logger.debug(`Tool ${name} completed successfully`);
+      return result;
+    } catch (error) {
+      logger.error(`Tool ${name} failed:`, error);
+
+      // Handle Zod validation errors
+      if (error && typeof error === 'object' && 'errors' in error) {
+        const zodError = error as { errors: Array<{ path: string[]; message: string }> };
+        const errorMessages = zodError.errors
+          .map(e => `${e.path.join('.')}: ${e.message}`)
+          .join(', ');
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Validation Error: ${errorMessages}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Error: ${error instanceof Error ? error.message : String(error)}`,
+          },
+        ],
+        isError: true,
+      };
+    }
+  });
+
+  // Start the server with stdio transport
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+
+  logger.info(`Dooray MCP Server running with ${tools.length} tools`);
+  logger.info('Tools available: ' + tools.map(t => t.name).join(', '));
+}
+
+// Error handling
+process.on('uncaughtException', (error) => {
+  logger.error('Uncaught exception:', error);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error('Unhandled rejection at:', promise, 'reason:', reason);
+  process.exit(1);
+});
+
+// Start the server
+main().catch((error) => {
+  logger.error('Failed to start server:', error);
+  process.exit(1);
+});

@@ -1,0 +1,54 @@
+{
+  "name": "@jhl8041/dooray-mcp",
+  "version": "0.1.1",
+  "description": "MCP server for Dooray",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "dooray-mcp": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "prepare": "npm run build",
+    "watch": "tsc --watch"
+  },
+  "keywords": [
+    "dooray-mcp",
+    "dooray mcp",
+    "dooray",
+    "mcp",
+    "model-context-protocol",
+    "nhn",
+    "nhn cloud",
+    "ai",
+    "llm"
+  ],
+  "author": "Jae Hyung Lee",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jhl8041/dooray-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jhl8041/dooray-mcp/issues"
+  },
+  "homepage": "https://github.com/jhl8041/dooray-mcp#readme",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "axios": "^1.7.9",
+    "dotenv": "^16.4.7",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
