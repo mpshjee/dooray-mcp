@@ -133,7 +133,7 @@ export async function createTask(params: CreateTaskParams): Promise<Task> {
  */
 export async function updateTask(
   projectId: string,
-  taskNumber: number,
+  taskId: number,
   params: UpdateTaskParams
 ): Promise<Task> {
   const client = getClient();
@@ -150,7 +150,7 @@ export async function updateTask(
   if (params.priority !== undefined) requestBody.priority = params.priority;
   if (params.workflowId !== undefined) requestBody.workflowId = params.workflowId;
 
-  return client.put(`${PROJECTS_BASE}/projects/${projectId}/posts/${taskNumber}`, requestBody);
+  return client.put(`${PROJECTS_BASE}/projects/${projectId}/posts/${taskId}`, requestBody);
 }
 
 /**
