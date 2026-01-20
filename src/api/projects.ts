@@ -160,7 +160,7 @@ export async function createDraftTask(params: CreateTaskParams): Promise<DraftTa
  */
 export async function updateTask(
   projectId: string,
-  taskId: number,
+  taskId: string,
   params: UpdateTaskParams
 ): Promise<Task> {
   const client = getClient();

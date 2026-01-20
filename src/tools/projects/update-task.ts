@@ -20,7 +20,7 @@ const bodySchema = z.object({
 
 export const updateTaskSchema = z.object({
   projectId: z.string().describe('Project ID'),
-  taskNumber: z.number().describe('Task number to update'),
+  taskId: z.string().describe('Task ID to update'),
   subject: z.string().optional().describe('New task subject/title'),
   body: bodySchema.optional().describe('New task body content'),
   assignees: z.array(memberSchema).optional().describe('New list of assignees'),
@@ -36,7 +36,7 @@ export type UpdateTaskInput = z.infer<typeof updateTaskSchema>;
 
 export async function updateTaskHandler(args: UpdateTaskInput) {
   try {
-    const result = await projectsApi.updateTask(args.projectId, args.taskNumber, {
+    const result = await projectsApi.updateTask(args.projectId, args.taskId, {
       subject: args.subject,
       body: args.body,
       users: {
@@ -106,14 +106,14 @@ export const updateTaskTool = {
 **URL Pattern Recognition**:
 When given a Dooray task URL like "https://nhnent.dooray.com/task/PROJECT_ID/TASK_ID":
 - Extract the first numeric ID after "/task/" as projectId
-- Extract the second numeric ID as taskNumber
+- Extract the second numeric ID as taskId
 
 **Examples**:
-- Change priority: {"projectId": "123", "taskNumber": 42, "priority": "high"}
-- Update assignees: {"projectId": "123", "taskNumber": 42, "assignees": [{"id": "user123", "type": "member"}]}
-- Change status: {"projectId": "123", "taskNumber": 42, "workflowId": "working"}
-- Update tags: {"projectId": "123", "taskNumber": 42, "tagIds": ["tag1", "tag2"]}
-- Clear milestone: {"projectId": "123", "taskNumber": 42, "milestoneId": null}
+- Change priority: {"projectId": "123", "taskId": "42", "priority": "high"}
+- Update assignees: {"projectId": "123", "taskId": "42", "assignees": [{"id": "user123", "type": "member"}]}
+- Change status: {"projectId": "123", "taskId": "42", "workflowId": "working"}
+- Update tags: {"projectId": "123", "taskId": "42", "tagIds": ["tag1", "tag2"]}
+- Clear milestone: {"projectId": "123", "taskId": "42", "milestoneId": null}
 
 Returns: Updated task with all current details.`,
   inputSchema: {
@@ -123,9 +123,9 @@ Returns: Updated task with all current details.`,
         type: 'string',
         description: 'Project ID where the task belongs',
       },
-      taskNumber: {
-        type: 'number',
-        description: 'Task number to update',
+      taskId: {
+        type: 'string',
+        description: 'Task ID to update',
       },
       subject: {
         type: 'string',
@@ -192,6 +192,6 @@ Returns: Updated task with all current details.`,
         description: 'New workflow ID (status). Use get-project-workflow-list to see available workflow statuses for this project. Workflow classes: backlog (대기), registered (등록/할 일), working (진행 중), closed (완료).',
       },
     },
-    required: ['projectId', 'taskNumber'],
+    required: ['projectId', 'taskId'],
   },
 };
