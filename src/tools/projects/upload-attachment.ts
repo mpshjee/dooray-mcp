@@ -1,42 +1,93 @@
 /**
  * Upload Attachment Tool
- * Upload a file attachment to a task
+ * Upload a file attachment to a task using curl
  */
 
 import { z } from 'zod';
-import { getClient } from '../../api/client.js';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import path from 'path';
+import fs from 'fs';
 import { formatError } from '../../utils/errors.js';
+import { logger } from '../../utils/logger.js';
+
+const execAsync = promisify(exec);
 
 export const uploadAttachmentSchema = z.object({
   projectId: z.string().describe('Project ID'),
   taskId: z.string().describe('Task ID (post ID)'),
-  fileName: z.string().describe('Name of the file to upload'),
-  fileContent: z.string().describe('Base64 encoded file content'),
-  mimeType: z.string().optional().describe('MIME type of the file (e.g., "image/png", "application/pdf"). Auto-detected if not provided.'),
+  filePath: z.string().describe('Absolute path to the file to upload'),
 });
 
 export type UploadAttachmentInput = z.infer<typeof uploadAttachmentSchema>;
 
 export async function uploadAttachmentHandler(args: UploadAttachmentInput) {
   try {
-    const client = getClient();
+    const apiToken = process.env.DOORAY_API_TOKEN;
+    if (!apiToken) {
+      throw new Error('DOORAY_API_TOKEN environment variable is required');
+    }
 
-    // Decode base64 content to Buffer
-    const fileBuffer = Buffer.from(args.fileContent, 'base64');
+    // Verify file exists
+    if (!fs.existsSync(args.filePath)) {
+      throw new Error(`File not found: ${args.filePath}`);
+    }
 
-    // Create Blob from Buffer
-    const mimeType = args.mimeType || 'application/octet-stream';
-    const blob = new Blob([fileBuffer], { type: mimeType });
+    const fileName = path.basename(args.filePath);
+    const baseUrl = process.env.DOORAY_API_BASE_URL || 'https://api.dooray.com';
+    const apiUrl = `${baseUrl}/project/v1/projects/${args.projectId}/posts/${args.taskId}/files`;
 
-    // Create FormData
-    const formData = new FormData();
-    formData.append('file', blob, args.fileName);
+    // Step 1: Make initial request to get 307 redirect location
+    logger.debug(`Upload step 1: POST ${apiUrl}`);
 
-    // Upload file
-    const result = await client.uploadFile(
-      `/project/v1/projects/${args.projectId}/posts/${args.taskId}/files`,
-      formData
-    );
+    const step1Command = `curl -s -X POST '${apiUrl}' \
+      --header 'Authorization: dooray-api ${apiToken}' \
+      --form 'file=@"${args.filePath}"' \
+      -w '\\n%{http_code}\\n%{redirect_url}' \
+      -o /dev/null`;
+
+    const step1Result = await execAsync(step1Command);
+    const step1Lines = step1Result.stdout.trim().split('\n');
+    const httpCode = step1Lines[step1Lines.length - 2];
+    const redirectUrl = step1Lines[step1Lines.length - 1];
+
+    logger.debug(`Step 1 response: HTTP ${httpCode}, redirect: ${redirectUrl}`);
+
+    let result: { id: string };
+
+    if (httpCode === '307' && redirectUrl) {
+      // Step 2: Follow redirect and upload to file server
+      logger.debug(`Upload step 2: POST ${redirectUrl}`);
+
+      const step2Command = `curl -s -X POST '${redirectUrl}' \
+        --header 'Authorization: dooray-api ${apiToken}' \
+        --form 'file=@"${args.filePath}"'`;
+
+      const step2Result = await execAsync(step2Command);
+      const response = JSON.parse(step2Result.stdout);
+
+      if (!response.header?.isSuccessful) {
+        throw new Error(response.header?.resultMessage || 'Upload failed');
+      }
+
+      result = response.result;
+    } else if (httpCode === '200' || httpCode === '201') {
+      // Direct upload succeeded (no redirect)
+      const directCommand = `curl -s -X POST '${apiUrl}' \
+        --header 'Authorization: dooray-api ${apiToken}' \
+        --form 'file=@"${args.filePath}"'`;
+
+      const directResult = await execAsync(directCommand);
+      const response = JSON.parse(directResult.stdout);
+
+      if (!response.header?.isSuccessful) {
+        throw new Error(response.header?.resultMessage || 'Upload failed');
+      }
+
+      result = response.result;
+    } else {
+      throw new Error(`Unexpected HTTP status: ${httpCode}`);
+    }
 
     return {
       content: [
@@ -44,8 +95,9 @@ export async function uploadAttachmentHandler(args: UploadAttachmentInput) {
           type: 'text',
           text: JSON.stringify({
             success: true,
-            fileId: result.result?.id || result.id,
-            message: `File "${args.fileName}" successfully uploaded to task.`,
+            fileId: result.id,
+            fileName: fileName,
+            message: `File "${fileName}" successfully uploaded to task.`,
           }, null, 2),
         },
       ],
@@ -70,24 +122,18 @@ export const uploadAttachmentTool = {
 **Required Parameters:**
 - projectId: The project ID
 - taskId: The task ID (post ID) to attach the file to
-- fileName: Name for the uploaded file (e.g., "report.pdf")
-- fileContent: Base64 encoded file content
-
-**Optional Parameters:**
-- mimeType: MIME type (e.g., "image/png", "application/pdf"). Auto-detected if not provided.
+- filePath: Absolute path to the file to upload (e.g., "/Users/name/document.pdf")
 
 **Example:**
 {
   "projectId": "123456",
   "taskId": "789012",
-  "fileName": "screenshot.png",
-  "fileContent": "iVBORw0KGgoAAAANSUhEUgAA...",
-  "mimeType": "image/png"
+  "filePath": "/Users/nhn/Downloads/report.pdf"
 }
 
 **Returns:** File ID of the uploaded attachment.
 
-**Note:** The fileContent must be Base64 encoded. Maximum file size depends on Dooray's server limits.`,
+**Note:** The file must exist at the specified path. Maximum file size depends on Dooray's server limits.`,
   inputSchema: {
     type: 'object',
     properties: {
@@ -99,19 +145,11 @@ export const uploadAttachmentTool = {
         type: 'string',
         description: 'Task ID (post ID) to attach the file to',
       },
-      fileName: {
+      filePath: {
         type: 'string',
-        description: 'Name of the file to upload',
-      },
-      fileContent: {
-        type: 'string',
-        description: 'Base64 encoded file content',
-      },
-      mimeType: {
-        type: 'string',
-        description: 'MIME type of the file (optional, auto-detected if not provided)',
+        description: 'Absolute path to the file to upload',
       },
     },
-    required: ['projectId', 'taskId', 'fileName', 'fileContent'],
+    required: ['projectId', 'taskId', 'filePath'],
   },
 };
