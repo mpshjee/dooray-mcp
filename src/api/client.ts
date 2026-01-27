@@ -125,20 +125,55 @@ export class DoorayClient {
   }
 
   /**
-   * Upload a file
+   * Upload a file with 307 Redirect handling
+   * Dooray file API uses a two-step process:
+   * 1. First request returns 307 with Location header
+   * 2. Second request to Location URL performs actual upload
    */
   async uploadFile(url: string, formData: FormData, headers?: DoorayHeaders): Promise<any> {
-    // Create a client without Content-Type header for file uploads
-    const uploadClient = axios.create({
-      baseURL: this.config.baseUrl || DEFAULT_BASE_URL,
+    const baseUrl = this.config.baseUrl || DEFAULT_BASE_URL;
+    const fullUrl = url.startsWith('http') ? url : `${baseUrl}${url}`;
+    const authHeader = `dooray-api ${this.config.apiToken}`;
+
+    // Step 1: Make initial request with redirect disabled to get 307
+    const initialClient = axios.create({
       timeout: 60000,
+      maxRedirects: 0, // Disable automatic redirect following
+      validateStatus: (status) => status === 307 || (status >= 200 && status < 300),
+    });
+
+    logger.debug(`File upload step 1: POST ${fullUrl}`);
+    const initialResponse = await initialClient.post(fullUrl, formData, {
       headers: {
-        Authorization: `dooray-api ${this.config.apiToken}`,
+        Authorization: authHeader,
         ...headers,
       },
     });
 
-    const response = await uploadClient.post(url, formData);
+    // If we got a direct success response (not 307), return it
+    if (initialResponse.status !== 307) {
+      logger.debug('File upload completed without redirect');
+      return initialResponse.data;
+    }
+
+    // Step 2: Extract Location header and make second request
+    const locationUrl = initialResponse.headers['location'];
+    if (!locationUrl) {
+      throw new DoorayAPIError('307 redirect received but no Location header found');
+    }
+
+    logger.debug(`File upload step 2: POST ${locationUrl}`);
+    const uploadClient = axios.create({
+      timeout: 60000,
+    });
+
+    const response = await uploadClient.post(locationUrl, formData, {
+      headers: {
+        Authorization: authHeader,
+        ...headers,
+      },
+    });
+
     return response.data;
   }
 
@@ -193,6 +228,76 @@ export class DoorayClient {
     });
 
     return this.extractPaginatedResult<T>(response);
+  }
+
+  /**
+   * Download a file as binary data with 307 Redirect handling
+   * Dooray file API uses a two-step process:
+   * 1. First request returns 307 with Location header
+   * 2. Second request to Location URL performs actual download
+   */
+  async downloadFile(url: string, params?: Record<string, unknown>): Promise<{
+    data: ArrayBuffer;
+    contentType: string;
+    contentDisposition?: string;
+    contentLength?: number;
+  }> {
+    const baseUrl = this.config.baseUrl || DEFAULT_BASE_URL;
+    const fullUrl = url.startsWith('http') ? url : `${baseUrl}${url}`;
+    const authHeader = `dooray-api ${this.config.apiToken}`;
+
+    // Step 1: Make initial request with redirect disabled to get 307
+    const initialClient = axios.create({
+      timeout: 60000,
+      maxRedirects: 0,
+      validateStatus: (status) => status === 307 || (status >= 200 && status < 300),
+    });
+
+    logger.debug(`File download step 1: GET ${fullUrl}`);
+    const initialResponse = await initialClient.get(fullUrl, {
+      params,
+      headers: {
+        Authorization: authHeader,
+      },
+      responseType: 'arraybuffer',
+    });
+
+    // If we got a direct success response (not 307), return it
+    if (initialResponse.status !== 307) {
+      logger.debug('File download completed without redirect');
+      return {
+        data: initialResponse.data as ArrayBuffer,
+        contentType: initialResponse.headers['content-type'] || 'application/octet-stream',
+        contentDisposition: initialResponse.headers['content-disposition'],
+        contentLength: parseInt(initialResponse.headers['content-length'] || '0', 10),
+      };
+    }
+
+    // Step 2: Extract Location header and make second request
+    const locationUrl = initialResponse.headers['location'];
+    if (!locationUrl) {
+      throw new DoorayAPIError('307 redirect received but no Location header found');
+    }
+
+    logger.debug(`File download step 2: GET ${locationUrl}`);
+    const downloadClient = axios.create({
+      timeout: 60000,
+    });
+
+    const response = await downloadClient.get(locationUrl, {
+      params,
+      headers: {
+        Authorization: authHeader,
+      },
+      responseType: 'arraybuffer',
+    });
+
+    return {
+      data: response.data as ArrayBuffer,
+      contentType: response.headers['content-type'] || 'application/octet-stream',
+      contentDisposition: response.headers['content-disposition'],
+      contentLength: parseInt(response.headers['content-length'] || '0', 10),
+    };
   }
 
   /**

@@ -32,6 +32,8 @@ import {
   GetProjectMemberGroupListParams,
   FileUploadResult,
   PaginatedResponse,
+  TaskAttachment,
+  TaskAttachmentListParams,
 } from '../types/dooray-api.js';
 
 const PROJECTS_BASE = '/project/v1';
@@ -402,5 +404,70 @@ export async function uploadFileToTask(
   return client.uploadFile(
     `${PROJECTS_BASE}/projects/${projectId}/posts/${taskNumber}/files`,
     formData
+  );
+}
+
+/**
+ * Get list of attachments for a task (general type files only)
+ */
+export async function getTaskAttachments(
+  params: TaskAttachmentListParams
+): Promise<PaginatedResponse<TaskAttachment>> {
+  const client = getClient();
+
+  return client.getPaginated<TaskAttachment>(
+    `${PROJECTS_BASE}/projects/${params.projectId}/posts/${params.taskId}/files`
+  );
+}
+
+/**
+ * Get metadata of a specific attachment
+ */
+export async function getTaskAttachmentMetadata(
+  projectId: string,
+  taskId: string,
+  fileId: string
+): Promise<TaskAttachment> {
+  const client = getClient();
+
+  return client.get<TaskAttachment>(
+    `${PROJECTS_BASE}/projects/${projectId}/posts/${taskId}/files/${fileId}`,
+    { media: 'meta' }
+  );
+}
+
+/**
+ * Download attachment file as binary data
+ */
+export async function downloadTaskAttachment(
+  projectId: string,
+  taskId: string,
+  fileId: string
+): Promise<{
+  data: ArrayBuffer;
+  contentType: string;
+  contentDisposition?: string;
+  contentLength?: number;
+}> {
+  const client = getClient();
+
+  return client.downloadFile(
+    `${PROJECTS_BASE}/projects/${projectId}/posts/${taskId}/files/${fileId}`,
+    { media: 'raw' }
+  );
+}
+
+/**
+ * Delete attachment file from a task
+ */
+export async function deleteTaskAttachment(
+  projectId: string,
+  taskId: string,
+  fileId: string
+): Promise<void> {
+  const client = getClient();
+
+  await client.delete(
+    `${PROJECTS_BASE}/projects/${projectId}/posts/${taskId}/files/${fileId}`
   );
 }

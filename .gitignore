@@ -26,3 +26,6 @@ npm-debug.log*
 /.serena/
 /.claude/
 CLAUDE.md
+/_bmad/
+/_bmad-output/
+/docs/

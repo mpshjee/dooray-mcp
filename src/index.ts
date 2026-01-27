@@ -33,6 +33,11 @@ import { getProjectTemplateTool, getProjectTemplateHandler, getProjectTemplateSc
 import { getProjectMemberListTool, getProjectMemberListHandler, getProjectMemberListSchema } from './tools/projects/get-project-member-list.js';
 import { getProjectMemberGroupListTool, getProjectMemberGroupListHandler, getProjectMemberGroupListSchema } from './tools/projects/get-project-member-group-list.js';
 import { getProjectWorkflowListTool, getProjectWorkflowListHandler, getProjectWorkflowListSchema } from './tools/projects/get-project-workflow-list.js';
+import { uploadAttachmentTool, uploadAttachmentHandler, uploadAttachmentSchema } from './tools/projects/upload-attachment.js';
+import { getAttachmentListTool, getAttachmentListHandler, getAttachmentListSchema } from './tools/projects/get-attachment-list.js';
+import { getAttachmentMetadataTool, getAttachmentMetadataHandler, getAttachmentMetadataSchema } from './tools/projects/get-attachment-metadata.js';
+import { downloadAttachmentTool, downloadAttachmentHandler, downloadAttachmentSchema } from './tools/projects/download-attachment.js';
+import { deleteAttachmentTool, deleteAttachmentHandler, deleteAttachmentSchema } from './tools/projects/delete-attachment.js';
 
 // Load environment variables
 dotenv.config();
@@ -61,6 +66,11 @@ const toolRegistry = {
   'get-project-member-list': { handler: getProjectMemberListHandler, schema: getProjectMemberListSchema },
   'get-project-member-group-list': { handler: getProjectMemberGroupListHandler, schema: getProjectMemberGroupListSchema },
   'get-project-workflow-list': { handler: getProjectWorkflowListHandler, schema: getProjectWorkflowListSchema },
+  'upload-attachment': { handler: uploadAttachmentHandler, schema: uploadAttachmentSchema },
+  'get-attachment-list': { handler: getAttachmentListHandler, schema: getAttachmentListSchema },
+  'get-attachment-metadata': { handler: getAttachmentMetadataHandler, schema: getAttachmentMetadataSchema },
+  'download-attachment': { handler: downloadAttachmentHandler, schema: downloadAttachmentSchema },
+  'delete-attachment': { handler: deleteAttachmentHandler, schema: deleteAttachmentSchema },
 };
 
 /**
@@ -84,6 +94,11 @@ const tools = [
   getProjectMemberListTool,
   getProjectMemberGroupListTool,
   getProjectWorkflowListTool,
+  uploadAttachmentTool,
+  getAttachmentListTool,
+  getAttachmentMetadataTool,
+  downloadAttachmentTool,
+  deleteAttachmentTool,
 ];
 
 /**

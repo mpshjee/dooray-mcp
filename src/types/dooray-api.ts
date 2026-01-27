@@ -424,6 +424,23 @@ export interface GetProjectTemplateParams {
   templateId: string;
 }
 
+/**
+ * Task Attachment (첨부파일) - returned from file list API
+ */
+export interface TaskAttachment {
+  id: string;
+  name: string;
+  size: string;
+  mimeType: string;
+  createdAt: string;
+  creator: TaskCommentCreator;
+}
+
+export interface TaskAttachmentListParams {
+  projectId: string;
+  taskId: string;
+}
+
 export interface FileUploadResult {
   id: string;
   name: string;
