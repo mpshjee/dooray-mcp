@@ -1,21 +1,21 @@
 /**
- * Delete Wiki Comment Tool
- * Delete a wiki comment
+ * Delete Wiki Page Comment Tool
+ * Delete a comment on a wiki page
  */
 
 import { z } from 'zod';
 import * as wikiApi from '../../api/wiki.js';
 import { formatError } from '../../utils/errors.js';
 
-export const deleteWikiCommentSchema = z.object({
+export const deleteWikiPageCommentSchema = z.object({
   wikiId: z.string().describe('Wiki ID'),
   pageId: z.string().describe('Page ID'),
   commentId: z.string().describe('Comment ID'),
 });
 
-export type DeleteWikiCommentInput = z.infer<typeof deleteWikiCommentSchema>;
+export type DeleteWikiPageCommentInput = z.infer<typeof deleteWikiPageCommentSchema>;
 
-export async function deleteWikiCommentHandler(args: DeleteWikiCommentInput) {
+export async function deleteWikiPageCommentHandler(args: DeleteWikiPageCommentInput) {
   try {
     await wikiApi.deleteWikiPageComment(args.wikiId, args.pageId, args.commentId);
     return { content: [{ type: 'text', text: JSON.stringify({ success: true, message: 'Comment deleted successfully' }, null, 2) }] };
@@ -24,14 +24,14 @@ export async function deleteWikiCommentHandler(args: DeleteWikiCommentInput) {
   }
 }
 
-export const deleteWikiCommentTool = {
-  name: 'delete-wiki-comment',
-  description: 'Delete a wiki comment.',
+export const deleteWikiPageCommentTool = {
+  name: 'delete-wiki-page-comment',
+  description: 'Delete a comment on a wiki page.',
   inputSchema: {
     type: 'object',
     properties: {
       wikiId: { type: 'string', description: 'Wiki ID (required)' },
-      pageId: { type: 'string', description: 'Page ID (required)' },
+      pageId: { type: 'string', description: 'Wiki page ID (required)' },
       commentId: { type: 'string', description: 'Comment ID (required)' },
     },
     required: ['wikiId', 'pageId', 'commentId'],

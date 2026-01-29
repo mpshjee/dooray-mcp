@@ -45,11 +45,11 @@ import { getWikiPageListTool, getWikiPageListHandler, getWikiPageListSchema } fr
 import { getWikiPageTool, getWikiPageHandler, getWikiPageSchema } from './tools/wiki/get-wiki-page.js';
 import { createWikiPageTool, createWikiPageHandler, createWikiPageSchema } from './tools/wiki/create-wiki-page.js';
 import { updateWikiPageTool, updateWikiPageHandler, updateWikiPageSchema } from './tools/wiki/update-wiki-page.js';
-import { getWikiCommentListTool, getWikiCommentListHandler, getWikiCommentListSchema } from './tools/wiki/get-wiki-comment-list.js';
-import { getWikiCommentTool, getWikiCommentHandler, getWikiCommentSchema } from './tools/wiki/get-wiki-comment.js';
-import { createWikiCommentTool, createWikiCommentHandler, createWikiCommentSchema } from './tools/wiki/create-wiki-comment.js';
-import { updateWikiCommentTool, updateWikiCommentHandler, updateWikiCommentSchema } from './tools/wiki/update-wiki-comment.js';
-import { deleteWikiCommentTool, deleteWikiCommentHandler, deleteWikiCommentSchema } from './tools/wiki/delete-wiki-comment.js';
+import { getWikiPageCommentListTool, getWikiPageCommentListHandler, getWikiPageCommentListSchema } from './tools/wiki/get-wiki-comment-list.js';
+import { getWikiPageCommentTool, getWikiPageCommentHandler, getWikiPageCommentSchema } from './tools/wiki/get-wiki-comment.js';
+import { createWikiPageCommentTool, createWikiPageCommentHandler, createWikiPageCommentSchema } from './tools/wiki/create-wiki-comment.js';
+import { updateWikiPageCommentTool, updateWikiPageCommentHandler, updateWikiPageCommentSchema } from './tools/wiki/update-wiki-comment.js';
+import { deleteWikiPageCommentTool, deleteWikiPageCommentHandler, deleteWikiPageCommentSchema } from './tools/wiki/delete-wiki-comment.js';
 
 // Load environment variables
 dotenv.config();
@@ -90,11 +90,11 @@ const toolRegistry = {
   'get-wiki-page': { handler: getWikiPageHandler, schema: getWikiPageSchema },
   'create-wiki-page': { handler: createWikiPageHandler, schema: createWikiPageSchema },
   'update-wiki-page': { handler: updateWikiPageHandler, schema: updateWikiPageSchema },
-  'get-wiki-comment-list': { handler: getWikiCommentListHandler, schema: getWikiCommentListSchema },
-  'get-wiki-comment': { handler: getWikiCommentHandler, schema: getWikiCommentSchema },
-  'create-wiki-comment': { handler: createWikiCommentHandler, schema: createWikiCommentSchema },
-  'update-wiki-comment': { handler: updateWikiCommentHandler, schema: updateWikiCommentSchema },
-  'delete-wiki-comment': { handler: deleteWikiCommentHandler, schema: deleteWikiCommentSchema },
+  'get-wiki-page-comment-list': { handler: getWikiPageCommentListHandler, schema: getWikiPageCommentListSchema },
+  'get-wiki-page-comment': { handler: getWikiPageCommentHandler, schema: getWikiPageCommentSchema },
+  'create-wiki-page-comment': { handler: createWikiPageCommentHandler, schema: createWikiPageCommentSchema },
+  'update-wiki-page-comment': { handler: updateWikiPageCommentHandler, schema: updateWikiPageCommentSchema },
+  'delete-wiki-page-comment': { handler: deleteWikiPageCommentHandler, schema: deleteWikiPageCommentSchema },
 };
 
 /**
@@ -130,11 +130,11 @@ const tools = [
   getWikiPageTool,
   createWikiPageTool,
   updateWikiPageTool,
-  getWikiCommentListTool,
-  getWikiCommentTool,
-  createWikiCommentTool,
-  updateWikiCommentTool,
-  deleteWikiCommentTool,
+  getWikiPageCommentListTool,
+  getWikiPageCommentTool,
+  createWikiPageCommentTool,
+  updateWikiPageCommentTool,
+  deleteWikiPageCommentTool,
 ];
 
 /**

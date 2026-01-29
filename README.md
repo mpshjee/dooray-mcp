@@ -74,11 +74,11 @@ claude mcp add -s user dooray-mcp npx @jhl8041/dooray-mcp@latest
 - `get-wiki-page` - 위키 페이지 상세정보
 - `create-wiki-page` - 위키 페이지 생성
 - `update-wiki-page` - 위키 페이지 수정
-- `get-wiki-comment-list` - 위키 댓글 목록
-- `get-wiki-comment` - 위키 댓글 상세정보
-- `create-wiki-comment` - 위키 댓글 작성
-- `update-wiki-comment` - 위키 댓글 수정
-- `delete-wiki-comment` - 위키 댓글 삭제
+- `get-wiki-page-comment-list` - 위키 페이지 댓글 목록
+- `get-wiki-page-comment` - 위키 페이지 댓글 상세정보
+- `create-wiki-page-comment` - 위키 페이지 댓글 작성
+- `update-wiki-page-comment` - 위키 페이지 댓글 수정
+- `delete-wiki-page-comment` - 위키 페이지 댓글 삭제
 
 ## 개발
 

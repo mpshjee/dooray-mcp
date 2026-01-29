@@ -1,22 +1,22 @@
 /**
- * Update Wiki Comment Tool
- * Update a wiki comment content
+ * Update Wiki Page Comment Tool
+ * Update a comment on a wiki page
  */
 
 import { z } from 'zod';
 import * as wikiApi from '../../api/wiki.js';
 import { formatError } from '../../utils/errors.js';
 
-export const updateWikiCommentSchema = z.object({
+export const updateWikiPageCommentSchema = z.object({
   wikiId: z.string().describe('Wiki ID'),
   pageId: z.string().describe('Page ID'),
   commentId: z.string().describe('Comment ID'),
   content: z.string().describe('New comment content (markdown)'),
 });
 
-export type UpdateWikiCommentInput = z.infer<typeof updateWikiCommentSchema>;
+export type UpdateWikiPageCommentInput = z.infer<typeof updateWikiPageCommentSchema>;
 
-export async function updateWikiCommentHandler(args: UpdateWikiCommentInput) {
+export async function updateWikiPageCommentHandler(args: UpdateWikiPageCommentInput) {
   try {
     await wikiApi.updateWikiPageComment(args);
     return { content: [{ type: 'text', text: JSON.stringify({ success: true, message: 'Comment updated successfully' }, null, 2) }] };
@@ -25,14 +25,14 @@ export async function updateWikiCommentHandler(args: UpdateWikiCommentInput) {
   }
 }
 
-export const updateWikiCommentTool = {
-  name: 'update-wiki-comment',
-  description: 'Update a wiki comment content.',
+export const updateWikiPageCommentTool = {
+  name: 'update-wiki-page-comment',
+  description: 'Update a comment on a wiki page.',
   inputSchema: {
     type: 'object',
     properties: {
       wikiId: { type: 'string', description: 'Wiki ID (required)' },
-      pageId: { type: 'string', description: 'Page ID (required)' },
+      pageId: { type: 'string', description: 'Wiki page ID (required)' },
       commentId: { type: 'string', description: 'Comment ID (required)' },
       content: { type: 'string', description: 'New comment content in markdown (required)' },
     },

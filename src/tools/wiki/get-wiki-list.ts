@@ -25,7 +25,14 @@ export async function getWikiListHandler(args: GetWikiListInput) {
 
 export const getWikiListTool = {
   name: 'get-wiki-list',
-  description: 'Get list of accessible wikis. Returns wiki ID, name, project, type, scope, and home page ID.',
+  description: `Get list of accessible wikis.
+
+**Wiki vs WikiPage**:
+- Wiki is a container that groups related wiki pages together (similar to how Project groups Tasks)
+- Each wiki has a home page and can contain multiple wiki pages in a tree structure
+- Use get-wiki-page-list to get pages within a specific wiki
+
+Returns: wiki ID, name, project, type, scope, and home page ID.`,
   inputSchema: {
     type: 'object',
     properties: {
