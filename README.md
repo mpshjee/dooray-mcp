@@ -83,7 +83,7 @@ claude mcp add -s user dooray-mcp npx @jhl8041/dooray-mcp@latest
 - `upload-attachment` - 파일 업로드
 - `get-attachment-list` - 첨부파일 목록
 - `get-attachment-metadata` - 첨부파일 메타데이터
-- `download-attachment` - 파일 다운로드 (savePath 옵션으로 로컬 저장 지원)
+- `download-attachment` - 파일 다운로드
 - `delete-attachment` - 첨부파일 삭제
 
 ### 드라이브
