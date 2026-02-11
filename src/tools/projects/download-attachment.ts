@@ -4,6 +4,8 @@
  */
 
 import { z } from 'zod';
+import fs from 'fs';
+import path from 'path';
 import * as projectsApi from '../../api/projects.js';
 import { formatError } from '../../utils/errors.js';
 
@@ -11,6 +13,7 @@ export const downloadAttachmentSchema = z.object({
   projectId: z.string().describe('Project ID'),
   taskId: z.string().describe('Task ID (post ID)'),
   fileId: z.string().describe('File ID'),
+  savePath: z.string().optional().describe('Local file path to save the downloaded file. If omitted, returns base64 data (only suitable for small files)'),
 });
 
 export type DownloadAttachmentInput = z.infer<typeof downloadAttachmentSchema>;
@@ -45,11 +48,49 @@ export async function downloadAttachmentHandler(args: DownloadAttachmentInput) {
       args.fileId
     );
 
-    // Convert ArrayBuffer to Base64
-    const base64Data = Buffer.from(result.data).toString('base64');
-
     // Extract filename from Content-Disposition header
     const filename = extractFilename(result.contentDisposition);
+
+    if (args.savePath) {
+      // Save to local file
+      let targetPath = args.savePath;
+      const isDirectory = targetPath.endsWith('/') ||
+        (fs.existsSync(targetPath) && fs.statSync(targetPath).isDirectory());
+
+      if (isDirectory) {
+        if (!fs.existsSync(targetPath)) {
+          fs.mkdirSync(targetPath, { recursive: true });
+        }
+        targetPath = path.join(targetPath, filename || `attachment-${args.fileId}`);
+      } else {
+        const dir = path.dirname(targetPath);
+        if (!fs.existsSync(dir)) {
+          fs.mkdirSync(dir, { recursive: true });
+        }
+      }
+
+      fs.writeFileSync(targetPath, Buffer.from(result.data));
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              success: true,
+              fileId: args.fileId,
+              filename: filename,
+              contentType: result.contentType,
+              contentLength: result.contentLength,
+              savedTo: targetPath,
+              message: `File saved to "${targetPath}" (${result.contentLength} bytes)`,
+            }, null, 2),
+          },
+        ],
+      };
+    }
+
+    // Convert ArrayBuffer to Base64 (for small files)
+    const base64Data = Buffer.from(result.data).toString('base64');
 
     return {
       content: [
@@ -88,24 +129,21 @@ export const downloadAttachmentTool = {
 - taskId: The task ID (post ID)
 - fileId: The file ID (get from get-attachment-list)
 
-**Example:**
-{
-  "projectId": "123456",
-  "taskId": "789012",
-  "fileId": "abc123"
-}
+**Optional:**
+- savePath: Local path to save the file. Can be a directory (filename auto-detected) or full file path. **Recommended for large files.**
 
-**Returns:** File data as Base64 encoded string, along with metadata.
+**Examples:**
+- Save to file: { "projectId": "123", "taskId": "456", "fileId": "789", "savePath": "/tmp/downloads/" }
+- Base64 (small files): { "projectId": "123", "taskId": "456", "fileId": "789" }
 
 **Response Fields:**
 - success: Whether download succeeded
 - fileId: The file ID
-- filename: Original filename (from Content-Disposition header)
+- filename: Original filename
 - contentType: MIME type of the file
 - contentLength: File size in bytes
-- base64Data: Base64 encoded file content
-
-**Note:** The file content is returned as Base64 encoded string. Decode it to get the original binary data.`,
+- savedTo: (when savePath used) Local path where file was saved
+- base64Data: (when savePath omitted) Base64 encoded file content`,
   inputSchema: {
     type: 'object',
     properties: {
@@ -120,6 +158,10 @@ export const downloadAttachmentTool = {
       fileId: {
         type: 'string',
         description: 'File ID',
+      },
+      savePath: {
+        type: 'string',
+        description: 'Local path to save (directory or full path). Recommended for large files.',
       },
     },
     required: ['projectId', 'taskId', 'fileId'],
