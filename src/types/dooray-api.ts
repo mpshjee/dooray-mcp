@@ -576,6 +576,94 @@ export interface WikiListParams {
   size?: number;
 }
 
+// ============================================================================
+// Drive API Types
+// ============================================================================
+
+export interface Drive {
+  id: string;
+  project: {
+    id: string | null;
+  };
+  name: string | null;
+  type: 'private' | 'project';
+}
+
+export interface DriveListParams {
+  type?: 'private' | 'project';
+  scope?: 'private' | 'public';
+  state?: string;
+  projectId?: string;
+}
+
+export interface DriveFile {
+  id: string;
+  driveId?: string;
+  name: string;
+  version: number;
+  revision?: string;
+  createdAt: string;
+  updatedAt: string;
+  creator?: {
+    organizationMemberId: string;
+  };
+  lastUpdater?: {
+    organizationMemberId: string;
+  };
+  type: 'folder' | 'file';
+  hasFolders?: boolean | null;
+  subType?: string;
+  mimeType?: string | null;
+  size?: number | null;
+  annotations?: {
+    favorited?: boolean;
+    favoritedAt?: string | null;
+  };
+  parentFile?: {
+    id: string;
+    path: string;
+  };
+}
+
+export interface DriveFileListParams {
+  driveId: string;
+  parentId?: string;
+  type?: 'folder' | 'file';
+  subTypes?: string;
+  page?: number;
+  size?: number;
+}
+
+export interface CreateDriveFolderParams {
+  driveId: string;
+  folderId: string;
+  name: string;
+}
+
+export interface RenameDriveFileParams {
+  driveId: string;
+  fileId: string;
+  name: string;
+}
+
+export interface MoveDriveFileParams {
+  driveId: string;
+  fileId: string;
+  destinationFileId: string;
+}
+
+export interface CopyDriveFileParams {
+  driveId: string;
+  fileId: string;
+  destinationDriveId: string;
+  destinationFileId: string;
+}
+
+export interface DeleteDriveFileParams {
+  driveId: string;
+  fileId: string;
+}
+
 export interface WikiPage {
   id: string;
   wikiId: string;

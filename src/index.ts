@@ -49,6 +49,19 @@ import { getAttachmentMetadataTool, getAttachmentMetadataHandler, getAttachmentM
 import { downloadAttachmentTool, downloadAttachmentHandler, downloadAttachmentSchema } from './tools/projects/download-attachment.js';
 import { deleteAttachmentTool, deleteAttachmentHandler, deleteAttachmentSchema } from './tools/projects/delete-attachment.js';
 
+// Drive tools
+import { getDriveListTool, getDriveListHandler, getDriveListSchema } from './tools/drive/get-drive-list.js';
+import { getDriveFileListTool, getDriveFileListHandler, getDriveFileListSchema } from './tools/drive/get-drive-file-list.js';
+import { getDriveFileMetaTool, getDriveFileMetaHandler, getDriveFileMetaSchema } from './tools/drive/get-drive-file-meta.js';
+import { createDriveFolderTool, createDriveFolderHandler, createDriveFolderSchema } from './tools/drive/create-drive-folder.js';
+import { renameDriveFileTool, renameDriveFileHandler, renameDriveFileSchema } from './tools/drive/rename-drive-file.js';
+import { moveDriveFileTool, moveDriveFileHandler, moveDriveFileSchema } from './tools/drive/move-drive-file.js';
+import { copyDriveFileTool, copyDriveFileHandler, copyDriveFileSchema } from './tools/drive/copy-drive-file.js';
+import { deleteDriveFileTool, deleteDriveFileHandler, deleteDriveFileSchema } from './tools/drive/delete-drive-file.js';
+import { uploadDriveFileTool, uploadDriveFileHandler, uploadDriveFileSchema } from './tools/drive/upload-drive-file.js';
+import { downloadDriveFileTool, downloadDriveFileHandler, downloadDriveFileSchema } from './tools/drive/download-drive-file.js';
+import { updateDriveFileTool, updateDriveFileHandler, updateDriveFileSchema } from './tools/drive/update-drive-file.js';
+
 // Wiki tools
 import { getWikiListTool, getWikiListHandler, getWikiListSchema } from './tools/wiki/get-wiki-list.js';
 import { getWikiPageListTool, getWikiPageListHandler, getWikiPageListSchema } from './tools/wiki/get-wiki-page-list.js';
@@ -100,6 +113,19 @@ const toolRegistry = {
   'download-attachment': { handler: downloadAttachmentHandler, schema: downloadAttachmentSchema },
   'delete-attachment': { handler: deleteAttachmentHandler, schema: deleteAttachmentSchema },
 
+  // Drive tools
+  'get-drive-list': { handler: getDriveListHandler, schema: getDriveListSchema },
+  'get-drive-file-list': { handler: getDriveFileListHandler, schema: getDriveFileListSchema },
+  'get-drive-file-meta': { handler: getDriveFileMetaHandler, schema: getDriveFileMetaSchema },
+  'create-drive-folder': { handler: createDriveFolderHandler, schema: createDriveFolderSchema },
+  'rename-drive-file': { handler: renameDriveFileHandler, schema: renameDriveFileSchema },
+  'move-drive-file': { handler: moveDriveFileHandler, schema: moveDriveFileSchema },
+  'copy-drive-file': { handler: copyDriveFileHandler, schema: copyDriveFileSchema },
+  'delete-drive-file': { handler: deleteDriveFileHandler, schema: deleteDriveFileSchema },
+  'upload-drive-file': { handler: uploadDriveFileHandler, schema: uploadDriveFileSchema },
+  'download-drive-file': { handler: downloadDriveFileHandler, schema: downloadDriveFileSchema },
+  'update-drive-file': { handler: updateDriveFileHandler, schema: updateDriveFileSchema },
+
   // Wiki tools
   'get-wiki-list': { handler: getWikiListHandler, schema: getWikiListSchema },
   'get-wiki-page-list': { handler: getWikiPageListHandler, schema: getWikiPageListSchema },
@@ -145,6 +171,19 @@ const tools = [
   getAttachmentMetadataTool,
   downloadAttachmentTool,
   deleteAttachmentTool,
+
+  // Drive tools
+  getDriveListTool,
+  getDriveFileListTool,
+  getDriveFileMetaTool,
+  createDriveFolderTool,
+  renameDriveFileTool,
+  moveDriveFileTool,
+  copyDriveFileTool,
+  deleteDriveFileTool,
+  uploadDriveFileTool,
+  downloadDriveFileTool,
+  updateDriveFileTool,
 
   // Wiki tools
   getWikiListTool,
